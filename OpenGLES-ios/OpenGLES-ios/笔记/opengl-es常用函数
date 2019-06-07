@@ -1,0 +1,228 @@
+#创建buffers
+1、void glGenFramebuffers(GLsizei n,GLuint * framebuffers);
+创建frame buffers
+2、void glDeleteFramebuffers(GLsizei n,const GLuint * framebuffers);
+删除frame buffers
+n表示buffers数量,framebuffers 表示buffer的数组
+3、void glGenRenderbuffers(GLsizei n,GLuint * renderbuffers);
+创建render buffers
+4、void glDeleteRenderbuffers(GLsizei n,const GLuint * renderbuffers);
+删除 render buffers
+5、void glFramebufferRenderbuffer(GLenum target,GLenum attachment,GLenum renderbuffertarget,GLuint renderbuffer);
+将render buffer关联到GL_FRAMEBUFFER常量上面
+target:取值必须为GL_FRAMEBUFFER
+attachment:取值为GL_COLOR_ATTACHMENT0, GL_DEPTH_ATTACHMENT, or GL_STENCIL_ATTACHMENT。一般视频渲染取GL_COLOR_ATTACHMENT0
+renderbuffertarget:取值必须为GL_RENDERBUFFER
+renderbuffer:要关联的render buffer的id(由glGenRenderbuffers()函数生成)
+6、GLenum glCheckFramebufferStatus(GLenum target);
+检查frame buffer相关是否成功，再glFramebufferRenderbuffer()之后调用去检查
+tagert:GL_FRAMEBUFFER;
+
+# 着色器相关函数
+1、GLuint glCreateShader(GLenum shaderType);
+创建着色器程序的句柄；成功返回非0整数
+shaderType:着色器类型，顶点和片元；取值GL_VERTEX_SHADER和GL_FRAGMENT_SHADER
+2、void glShaderSource(GLuint shader,GLsizei count,const GLchar * const *string,const GLint *length);
+为着色器句柄添加GLSL源代码
+shader:前面创建的着色器句柄
+count:源代码个数
+string:源代码字符串
+lenght:源代码字符串长度
+3、void glCompileShader(GLuint shader);
+编译着色器GLSL源码
+4、void glGetShaderiv(GLuint shader,GLenum pname,GLint *params);
+获取着色器编译过程中的日志和检测是否编译成功
+// 检查编译中日志,logLenght>0则说明有日志
+glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logLenght);
+// 检查编译是否成功,成功status==GLTRUE
+glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+5、GLuint glCreateProgram(void);
+创建用于生成顶点着色器和片元着色器最终程序的句柄
+6、void glAttachShader(GLuint program,GLuint shader);
+添加顶点着色器和片元着色器
+program:第五步创建的program
+shader:为前面编译成功的着色器句柄
+7、void glLinkProgram(GLuint program);
+连接程序,就像C语言的连接一样，这里将顶点着色器和片元着色器连接起来
+8、void glGetProgramiv(GLuint program,GLenum pname,GLint *params);
+输出连接过程中的日志和检查连接是否成功
+// 检查编译中日志,logLenght>0则说明有日志
+glGetProgramiv(filterProgram, GL_INFO_LOG_LENGTH, &logLength);
+// 检查编译是否成功,成功status==GLTRUE
+glGetProgramiv(filterProgram, GL_LINK_STATUS, &status);
+9、void glUseProgram(GLuint program);
+调用此函数后着色器程序才能正常使用，就相当于生成可执行程序后还得点击一下让其运行起来一样；之后才能使用第10个之后的函数
+10、GLint glGetAttribLocation(GLuint program,const GLchar *name);
+获取顶点着色器中的attribute修饰的变量的句柄，后面就可以通过该句柄从应用端向GLSL对应的变量传值了
+program:对应的GLSL程序，该函数必须在GLSL程序运行后才能使用(即调用了glUseProgram()函数)
+name:GLSL中attribute修饰的变量名
+11、GLint glGetUniformLocation(GLuint program,const GLchar *name);
+获取片元着色器中uniform sampler2D修饰的变量的句柄，后面就可以将该句柄和对应的纹理单元关联起来
+program:对应的GLSL程序，该函数必须在GLSL程序运行后才能使用(即调用了glUseProgram()函数)
+name:GLSL中uniform sampler2D修饰的变量名
+
+#视窗有关函数
+1、void glClearColor(GLclampf red,GLclampf green,GLclampf blue,GLclampf alpha);
+设置清屏的颜色,四个参数的范围都是0-1的浮点数，表示RGBA的组合
+2、void glClear(GLbitfield mask);
+用前面glClearColor(),glClearDepthf(),and glClearStencil()设置的颜色清除buffers;
+mask在这个函数中的取值要与上面三个函数一一对应，可取值如下：
+GL_COLOR_BUFFER_BIT:color buffer，前面如果调用了glClearColor()，则设置包含该值
+GL_DEPTH_BUFFER_BIT：depth buffer，前面如果调用了glClearDepthf()，则设置包含该值
+GL_STENCIL_BUFFER_BIT：stencil buffer，前面如果调用了glClearStencil()，则设置包含该值
+mask可以是上面几个值的组合,比如GL_COLOR_BUFFER_BIT|GL_STENCIL_BUFFER_BIT,但前提是前面分别调用了glClearColor()和glClearDepthf()设置颜色
+
+3、void glViewport(GLint x,GLint y,GLsizei width,GLsizei height);
+以当前视图的大小为基础(当前视图的左下角为坐标原点)在开辟一个(x,y,width,height)的渲染区域，该区域将作为后面顶点坐标等的参考坐标系。
+
+#纹理操作相关函数,应用端和opengl es传值相关函数
+4、void glPixelStorei(GLenum pname,GLint param);
+设置像素的对齐方式；
+pname:为GL_PACK_ALIGNMENT,会影响glReadPixels()函数从opengl es缓存中读取像素数据到app中的字节对齐方式
+pname:为GL_UNPACK_ALIGNMENT，会影响glTexImage2D() 和 glTexSubImage2D()函数从app发送像素数据到opengl es的字节对齐方式
+param:表示每次读取或者发送的像素数据是param的整数倍;举个例子，比如param为4，想要通过glTexImage2D()传输5x5像素的一张图片(25不是4的整数倍，所以需要手
+动添加padding即添加3个字节到这个图片buf中,这样读取时才不会出错，如果param为1就没有这样的烦恼，但是可能性能会低，值越大吞吐量就越大，效率也越高。
+那么上面两种方式的取值含义都是一样的,
+默认值为4；取值如下：
+1 (byte-alignment),
+2 (rows aligned to even-numbered bytes),
+4 (word-alignment),
+8 (rows start on double-word boundaries).
+
+5、void glDrawArrays(GLenum mode,GLint first,GLsizei count);
+确定要绘制的几何形状；通过mode指定，可取值如下：
+GL_POINTS:绘制点，那么顶点着色器还需要有gl_PointSize内建变量指定顶点的大小
+GL_LINES:绘制线
+GL_TRIANGLE_STRIP:绘制三角形，比如绘制纹理图片就是这种类型
+它处于渲染管线的第一阶段
+
+6、void glVertexAttribPointer(GLuint index,GLint size,GLenum type,GLboolean normalized,GLsizei stride,const GLvoid * pointer);
+用一个数组的方式给GLSL中attribute修饰的属性变量赋值;
+index:前面获取的GLSL变量的句柄
+size:表示每几个元素表示一个attribute修饰的变量;比如对于attribute vec4 position;修饰的顶点,就表示四个数据(x,y,z,w)才能表示一个顶点坐标，如果这里size为
+2，那么x,y有值，z，w将默认为0,依次类推。
+type:每个元素的数据类型，取值为GL_BYTE, GL_UNSIGNED_BYTE, GL_SHORT, GL_UNSIGNED_SHORT, GL_FIXED, or GL_FLOAT
+normalized:是否要对pointer中的数据进行归一化处理成(-1.0,1.0)范围的浮点型类型,如果已经是浮点型，这里传GL_FALSE即可。
+stride:获取每一个元素是否需要跳字节，如果前面的type类型pointer中元素类型一致，这里传0
+pointer:几何形状的各个顶点组成的数组;对于矩形来说，数组中顶点顺序为(左下角，右下角，左上角，右上角)
+该赋值得用glEnableVertexAttribArray()函数启用后才会生效
+
+7、void glUniform1i(GLint location,GLint v0);
+给片段着色器中的uniform sampler2D 修饰的纹理变量赋值，只有该函数调用后,片元着色器中的texture2D()函数才能正确工作
+location:为片元着色器中uniform sampler2D 修饰的变量句柄
+v0的取值为纹理单元的索引；比如想让激活的GL_TEXTURE2和上面的变量关联，则v0取值为2，那么片元着色器中的texture2D()函数将从该纹理单元对应的纹理里面查找像素
+
+8、void glEnableVertexAttribArray(GLuint index);
+   void glDisableVertexAttribArray(GLuint index);
+启用和禁用给attribute变量的赋值
+
+9、void glGetIntegerv(GLenum pname,GLint * params);
+获取指定类型的值
+GL_ACTIVE_TEXTURE:获取设备支持的纹理单元数目
+GL_MAX_TEXTURE_SIZE:获取设备支持的纹理能渲染的最大的长或宽大小，超过此大小则必须先压缩再传给opengl es，否则opengl es无法渲染
+
+10、void glGenTextures(GLsizei n,GLuint * textures);
+    void glDeleteTextures(GLsizei n,const GLuint * textures);
+创建纹理Id和删除纹理Id
+调用删除纹理Id函数会解除它与纹理类型对象的绑定
+
+11、void glActiveTexture(GLenum texture);
+选择指定的纹理单元，texture取值范围GL_TEXTUREi(i取值为0-GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS - 1)，其中GL_TEXTURE0默认激活的
+方式一、glActioveTexture(GL_TEXTUREi);只能到GL_TEXTURE31
+方式二、glActioveTexture(GL_TEXTURE0+i);i可以取值到GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS - 1
+
+12、void glBindTexture(GLenum target,GLuint texture);
+绑定纹理，当绑定完后，如果用其它texture再次与target绑定，则先前的绑定失效。或者调用glDeleteTextures()函数后，该绑定也将失效
+target:纹理类型，可取值：GL_TEXTURE_2D、GL_TEXTURE_CUBE_MAP
+texture:纹理id，由glGenTextures()函数生成
+函数10和11的工作流程用伪代码表示如下：
+GLenum curentTexutre;
+GLESObj globalObj;
+glActiveTexture(GLenum texture)
+{
+curentTexutre = texture;
+}
+glBindTexture(GLenum target,GLuint texture)
+{
+TextureUnit *texUnit = globalObj[curentTexutre];
+switch(target)
+{
+case GL_TEXTURE_1D: texUnit->targetTexture1D = textureObject; break;
+case GL_TEXTURE_2D: texUnit->targetTexture2D = textureObject; break;
+case GL_TEXTURE_3D: texUnit->targetTexture3D = textureObject; break;
+case GL_TEXTURE_CUBEMAP: texUnit->targetTextureCube = textureObject; break;
+}
+glTexImage2D(....)
+{
+    TextureUnit *texUnit = globalObj[curentTexutre];
+    texUnit->targetTexture2D->TexImage2D(...);
+    ......
+}
+所以如果调用glActiveTexture()之后不调用glBindTexture()函数，其实后面的glxxx()系列函数设置的参数只是对curentTexutre有效，会造成值被覆盖
+
+13、void glTexParameteri(GLenum target,GLenum pname,GLint param);
+给指定的纹理类型对象设定参数
+warping
+纹理坐标的范围是(0,1)当给定的纹理坐标超过这个范围时，将通过如下方式对超过的纹理坐标进行采样
+glTexParameter(GL_TEXTURE_2D,GL_TEXTURE_WARP_S,GL_REPEAT) S轴方向
+glTexParameter(GL_TEXTURE_2D,GL_TEXTURE_WARP_T,GL_REPEAT) T轴方向
+GL_REPEAT,GL_MIRRODED_REPEAT    (经过试验，此这两种方式视乎无效，GL_REPEAT默认)
+GL_CLAMP_TO_EDGE 超出的部分坐标被设置成0或者1，行程边缘色
+filter
+实际纹理的分辨率大小与要显示的屏幕区域的分辨率大小往往不相等，也就是要根据屏幕的实际大小对纹理进行放大和缩小，这里就需要用到filter，取值如下：
+GL_NEAREST:最邻近插值，取最近的纹素像素
+GL_LINEAR:线性插值，取最近的点的线性平均值 (性能消耗较大)
+glTexParameter(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR)
+glTexParameter(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR)
+mipmaps
+它也是一种纹理过滤算法，按我的理解它是以空间换时间的一种技巧，具体原理就是事先根据纹理生成长和宽逐渐除以2的小纹理，比如原始纹理大小128x128，
+采用此方法后，会生成64x64 32x32 16x16 8x8 4x4 2x2 1x1的一系列纹理，如果需要20x18的纹理，则取最近的32x32 16x16进行平均
+该方法很好的解决了如下问题：
+1、当纹理很大，但是屏幕区域很小，渲染出现的闪烁问题，因为根据最邻近插值和线性插值都无法很快计算出合理的像素
+它可以取的值如下：
+GL_NEAREST_MIPMAP_NEAREST 选择最近的mipmap层，然后再用最邻近过滤插值
+GL_LINEAR_MIPMAP_NEAREST    选择最近mipmap层，然后再用线性插值
+GL_NEAREST_MIPMAP_LINEAR    选择最近的2层mipmap用最邻近过滤插值
+GL_LINEAR_MIPMAP_LINEAR       选择最邻近的2层mipmap用线性插值
+使用如下函数生成mipmaps
+glGenerateMipmap(GLenum target);
+
+14、void glTexImage2D(GLenum target,    // 纹理对象类型，取值GL_TEXTURE_2D, GL_TEXTURE_CUBE_MAP_POSITIVE_X, GL_TEXTURE_CUBE_MAP_NEGATIVE_X, GL_TEXTURE_CUBE_MAP_POSITIVE_Y, GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, GL_TEXTURE_CUBE_MAP_POSITIVE_Z, or GL_TEXTURE_CUBE_MAP_NEGATIVE_Z或者
+GLint level,    // 纹理压缩等级，0代表不压缩，默认0
+GLint internalformat,// 内部每个像素的构成格式,取值GL_ALPHA, GL_LUMINANCE, GL_LUMINANCE_ALPHA, GL_RGB, GL_RGBA.
+GLsizei width,  // 纹理的宽，单位像素
+GLsizei height, // 纹理的高，单位像素
+GLint border,   // 设置为0 即可
+GLenum format,  // data中每个像素的构成格式，必须与internalformat保持一直，取值为GL_ALPHA, GL_RGB, GL_RGBA, GL_LUMINANCE, and GL_LUMINANCE_ALPHA.
+GLenum type,    // data中像素数据的组织方式,取值 GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT_5_6_5, GL_UNSIGNED_SHORT_4_4_4_4, and GL_UNSIGNED_SHORT_5_5_5_1.
+const GLvoid * data // 代表一张图片的像素数据
+);
+GL_ALPHA
+表示data中每个像素只有一个透明通道，当它传递给opengl es时，自动将RGB填充为0。
+GL_RGB
+表示data中每个像素只由RGB三个数组成，当它传递给opengl es时，自动将Alpha填充为1。
+GL_RGBA
+表示data中每个像素只由RGBA四个数组成，传递给Opengl es时，原封不动的传递
+GL_LUMINANCE
+表示data中每个像素只有一个值组成，当它传递给opengl es时，自动将RGB填充为该值，alpha填充为1
+GL_LUMINANCE_ALPHA
+表示data中每个像素只有一个值组成，当它传递给opengl es时，自动将RGB填充为该值，alpha原封不动
+GL_UNSIGNED_BYTE
+表示组成每个像素的通道占用8位该值可以与前面任何格式搭配使用
+GL_UNSIGNED_SHORT_5_6_5
+表示RGB分别占用6 6 5位,一个像素两个字节，该值只能与前面GL_RGB搭配
+GL_UNSIGNED_SHORT_4_4_4_4，
+表示RGBA 分别占用4位，一个像素两个字节，该值只能与前面GL_RGB搭配GL_RGBA
+GL_UNSIGNED_SHORT_5_5_5_1，
+表示RGBA 分别占用 5551位，一个像素两个字节，该值只能与前面GL_RGB搭配GL_RGBA
+
+15、void glTexSubImage2D(    GLenum target,
+GLint level,
+GLint xoffset,
+GLint yoffset,
+GLsizei width,
+GLsizei height,
+GLenum format,
+GLenum type,
+const GLvoid * data);
+用法和第15个函数一样，只不过可以选取data中的部分数据传递，更加灵活
